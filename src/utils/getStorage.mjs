@@ -21,12 +21,12 @@ const parseQs = arg => {
 globalThis.$argument = parseQs(globalThis.$argument);
 if (globalThis.$argument.LogLevel) Console.logLevel = globalThis.$argument.LogLevel;
 
-export default function getStorage(key, names, database) {
+export default function getStorage(key, names, database, queryArguments) {
     if (database?.Default?.Settings?.LogLevel) Console.logLevel = database.Default.Settings.LogLevel;
     Console.debug("☑️ getStorage");
     names = [names].flat(Number.POSITIVE_INFINITY);
 
-    const Root = { Settings: database?.Default?.Settings || {}, Configs: database?.Default?.Configs || {}, Caches: {} };
+    const Root = { Settings: _.merge({}, database?.Default?.Settings), Configs: _.merge({}, database?.Default?.Configs), Caches: {} };
 
     const PersistentStore = Storage.getItem(key, {});
     if (PersistentStore) {
@@ -52,6 +52,9 @@ export default function getStorage(key, names, database) {
         _.merge(Root.Settings, database?.[name]?.Settings);
     });
     _.merge(Root.Settings, $argument);
+    if (queryArguments) {
+        _.merge(Root.Settings, queryArguments);
+    }
     names.forEach(name => {
         _.merge(Root.Settings, PersistentStore?.[name]?.Settings);
     });

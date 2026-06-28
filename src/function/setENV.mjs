@@ -9,9 +9,9 @@ import { Lodash as _, Console } from "../utils/index.mjs";
  * @param {Object} database - Default DataBase
  * @return {Object} { Settings, Caches, Configs }
  */
-export default function setENV(name, platforms, database) {
+export default function setENV(name, platforms, database, queryArguments) {
     Console.info("☑️ Set Environment Variables");
-    const { Settings, Caches, Configs } = getStorage(name, platforms, database);
+    const { Settings, Caches, Configs } = getStorage(name, platforms, database, queryArguments);
     /***************** Settings *****************/
     Console.info(`typeof Settings: ${typeof Settings}`, `Settings: ${JSON.stringify(Settings, null, 2)}`);
     string2array("Weather.Replace");

@@ -3,9 +3,9 @@ export default {
     "config.sgmodule": `#!name = WeatherKit-Worker
 #!desc = 本项目是对 NSRingo/WeatherKit 的自托管优化重构版本。支持独立自部署至 Cloudflare Workers。\\n1.解锁全部天气功能\\n2.替换空气质量数据\\n3.添加下一小时降水数据\\n4.添加天气数据
 #!author = meme[https://github.com/meme]
-#!homepage = https://github.com/meme-lau/WeatherKit
+#!homepage = https://github.com/meme-lau/weatherkit-worker
 #!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
-#!date = 2026-06-25 14:40:00
+#!date = __DATE__
 
 [Rule]
 AND,((DOMAIN-SUFFIX,weatherkit.apple.com),(PROTOCOL,QUIC),(DST-PORT,443)),REJECT-NO-DROP
@@ -24,7 +24,7 @@ AND,((IP-CIDR,63.92.224.0/19,no-resolve),(PROTOCOL,UDP),(DST-PORT,443)),REJECT-N
 AND,((IP-CIDR,65.199.22.0/23,no-resolve),(PROTOCOL,UDP),(DST-PORT,443)),REJECT-NO-DROP
 AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
 DOMAIN-SUFFIX,weatherkit.apple.com,DIRECT
-DOMAIN-SUFFIX,localhost:8787,DIRECT
+DOMAIN-SUFFIX,__DOMAIN__,DIRECT
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
 DOMAIN,tether.edge.apple,REJECT-DROP
@@ -43,10 +43,10 @@ hostname = %APPEND% weatherkit.apple.com`,
     "config.plugin": `#!name = WeatherKit-Worker
 #!desc = 本项目是对 NSRingo/WeatherKit 的自托管优化重构版本。支持独立自部署至 Cloudflare Workers。\\n1.解锁全部天气功能\\n2.替换空气质量数据\\n3.添加下一小时降水数据\\n4.添加天气数据
 #!author = meme[https://github.com/meme]
-#!homepage = https://github.com/meme-lau/WeatherKit
+#!homepage = https://github.com/meme-lau/weatherkit-worker
 #!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
 #!system = iOS,iPadOS,macOS,watchOS
-#!date = 2026-06-25 14:40:00
+#!date = __DATE__
 #!system_version = 18
 
 [Rule]
@@ -66,7 +66,7 @@ AND,((IP-CIDR,63.92.224.0/19,no-resolve),(PROTOCOL,UDP),(DST-PORT,443)),REJECT-N
 AND,((IP-CIDR,65.199.22.0/23,no-resolve),(PROTOCOL,UDP),(DST-PORT,443)),REJECT-NO-DROP
 AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
 DOMAIN-SUFFIX,weatherkit.apple.com,DIRECT
-DOMAIN-SUFFIX,__HOST__,DIRECT
+DOMAIN-SUFFIX,__DOMAIN__,DIRECT
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
 DOMAIN,tether.edge.apple,REJECT-DROP
@@ -85,9 +85,9 @@ hostname = weatherkit.apple.com`,
     "config.srmodule": `#!name = WeatherKit-Worker
 #!desc = 本项目是对 NSRingo/WeatherKit 的自托管优化重构版本。支持独立自部署至 Cloudflare Workers。\\n1.解锁全部天气功能\\n2.替换空气质量数据\\n3.添加下一小时降水数据\\n4.添加天气数据
 #!author = meme[https://github.com/meme]
-#!homepage = https://github.com/meme-lau/WeatherKit
+#!homepage = https://github.com/meme-lau/weatherkit-worker
 #!icon = https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
-#!date = 2026-06-25 14:40:00
+#!date = __DATE__
 
 [Rule]
 AND,((DOMAIN-SUFFIX,weatherkit.apple.com),(PROTOCOL,QUIC),(DST-PORT,443)),REJECT-NO-DROP
@@ -106,7 +106,7 @@ AND,((IP-CIDR,63.92.224.0/19,no-resolve),(PROTOCOL,UDP),(DST-PORT,443)),REJECT-N
 AND,((IP-CIDR,65.199.22.0/23,no-resolve),(PROTOCOL,UDP),(DST-PORT,443)),REJECT-NO-DROP
 AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
 DOMAIN-SUFFIX,weatherkit.apple.com,DIRECT
-DOMAIN-SUFFIX,__HOST__,DIRECT
+DOMAIN-SUFFIX,__DOMAIN__,DIRECT
 DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
 DOMAIN,tether.edge.apple,REJECT-DROP
@@ -131,9 +131,9 @@ desc: |-
   4.添加天气数据
 author: |-
   meme[https://github.com/meme]
-homepage: "https://github.com/meme-lau/WeatherKit"
+homepage: "https://github.com/meme-lau/weatherkit-worker"
 icon: "https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png"
-date: "2026-06-25 14:40:00"
+date: "__DATE__"
 
 rules:
 - AND,((DOMAIN-SUFFIX,weatherkit.apple.com),(PROTOCOL,QUIC),(DST-PORT,443)),REJECT-NO-DROP
@@ -152,7 +152,7 @@ rules:
 - AND,((IP-CIDR,65.199.22.0/23,no-resolve),(PROTOCOL,UDP),(DST-PORT,443)),REJECT-NO-DROP
 - AND,((OR,((IP-ASN,714,no-resolve),(IP-ASN,6185,no-resolve))),(PROTOCOL,QUIC)),REJECT-DROP
 - DOMAIN-SUFFIX,weatherkit.apple.com,DIRECT
-- DOMAIN-SUFFIX,__HOST__,DIRECT
+- DOMAIN-SUFFIX,__DOMAIN__,DIRECT
 - DOMAIN,weather-analytics-events.apple.com,REJECT-DROP
 - DOMAIN-SUFFIX,tthr.apple.com,REJECT-DROP
 - DOMAIN,tether.edge.apple,REJECT-DROP
@@ -165,7 +165,8 @@ http:
   - ^https?:\\/\\/weatherkit\\.apple\\.com\\/api\\/v1\\/airQualityScale\\/ https://__HOST__/api/v1/airQualityScale/ transparent
   - ^https?:\\/\\/weatherkit\\.apple\\.com\\/api\\/v2\\/weather\\/ https://__HOST__/api/v2/weather/ transparent`,
 
-    "config.yaml": `name: 'WeatherKit-Worker'
+    "config.yaml": `# Date: __DATE__
+name: 'WeatherKit-Worker'
 description: |-
   本项目是对 NSRingo/WeatherKit 的自托管优化重构版本。支持独立自部署至 Cloudflare Workers。
   1.解锁全部天气功能
@@ -173,7 +174,7 @@ description: |-
   3.添加下一小时降水数据
   4.添加天气数据
 author: meme
-homepage: https://github.com/meme-lau/WeatherKit
+homepage: https://github.com/meme-lau/weatherkit-worker
 icon: https://developer.apple.com/assets/elements/icons/weatherkit/weatherkit-128x128.png
 dns: {}
 rules:
@@ -333,7 +334,7 @@ rules:
     match: weatherkit.apple.com
     policy: DIRECT
 - domain_suffix:
-    match: __HOST__
+    match: __DOMAIN__
     policy: DIRECT
 - domain:
     match: weather-analytics-events.apple.com
