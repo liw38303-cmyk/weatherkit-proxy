@@ -37,23 +37,105 @@ export async function fetch(resource, options = {}) {
         timeoutId = setTimeout(() => controller.abort(), ms);
     }
 
+    const isCF = typeof globalThis.caches !== "undefined" && typeof globalThis.caches.default !== "undefined";
+    const isGet = methodUpper === "GET" || methodUpper === "HEAD";
+    const isThirdPartyWeather = isGet && (url.includes("api.caiyunapp.com") || url.includes("qweather.com") || url.includes("qweather"));
+
+    let cacheKey;
+    let cache;
+
+    if (isCF && isThirdPartyWeather) {
+        try {
+            cache = globalThis.caches.default;
+            cacheKey = new Request(url, { method: "GET" });
+            const cachedResponse = await cache.match(cacheKey);
+            if (cachedResponse) {
+                const responseHeaders = {};
+                cachedResponse.headers.forEach((value, key) => {
+                    responseHeaders[key] = value;
+                });
+
+                const cachedContentType = cachedResponse.headers.get("content-type") || "";
+                const isBinary = cachedContentType.includes("flatbuffer") || cachedContentType.includes("protobuf") || cachedContentType.includes("octet-stream");
+
+                let cachedBody = "";
+                let cachedBodyBytes = null;
+                if (isBinary) {
+                    cachedBodyBytes = await cachedResponse.arrayBuffer();
+                } else {
+                    cachedBody = await cachedResponse.text();
+                }
+
+                if (timeoutId) clearTimeout(timeoutId);
+                return {
+                    ok: cachedResponse.ok,
+                    status: cachedResponse.status,
+                    statusCode: cachedResponse.status,
+                    statusText: cachedResponse.statusText,
+                    body: cachedBody,
+                    bodyBytes: cachedBodyBytes,
+                    headers: { ...responseHeaders, "x-ir-cache": "HIT" },
+                };
+            }
+        } catch (cacheErr) {
+            console.error("Cache match error:", cacheErr);
+        }
+    }
+
     try {
         const response = await globalThis.fetch(url, fetchOptions);
-        const arrayBuffer = await response.arrayBuffer();
         const responseHeaders = {};
         response.headers.forEach((value, key) => {
             responseHeaders[key] = value;
         });
 
-        return {
+        const contentType = response.headers.get("content-type") || "";
+        const isBinary = contentType.includes("flatbuffer") || contentType.includes("protobuf") || contentType.includes("octet-stream");
+
+        let responseBody = "";
+        let responseBodyBytes = null;
+        let responseForCache = null;
+
+        if (cache && cacheKey && response.ok) {
+            responseForCache = response.clone();
+        }
+
+        if (isBinary) {
+            responseBodyBytes = await response.arrayBuffer();
+        } else {
+            responseBody = await response.text();
+        }
+
+        const result = {
             ok: response.ok,
             status: response.status,
             statusCode: response.status,
             statusText: response.statusText,
-            body: new TextDecoder("utf-8").decode(arrayBuffer),
-            bodyBytes: arrayBuffer,
-            headers: responseHeaders,
+            body: responseBody,
+            bodyBytes: responseBodyBytes,
+            headers: { ...responseHeaders, "x-ir-cache": "MISS" },
         };
+
+        if (cache && cacheKey && responseForCache) {
+            try {
+                const cfResponse = new globalThis.Response(responseForCache.body, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: {
+                        ...responseHeaders,
+                        "Cache-Control": "public, max-age=180",
+                    },
+                });
+                const cachePromise = cache.put(cacheKey, cfResponse).catch(putErr => console.error("Cache put error:", putErr));
+                if (globalThis.ctx && typeof globalThis.ctx.waitUntil === "function") {
+                    globalThis.ctx.waitUntil(cachePromise);
+                }
+            } catch (putErr) {
+                console.error("Cache put error:", putErr);
+            }
+        }
+
+        return result;
     } finally {
         if (timeoutId) {
             clearTimeout(timeoutId);
