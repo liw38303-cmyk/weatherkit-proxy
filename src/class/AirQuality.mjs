@@ -1853,9 +1853,9 @@ export default class AirQuality {
     };
 
     static ConvertUnit(amount, from, to, fromStpConversionFactor = -1, toStpConversionFactor = -1) {
-        Console.info("☑️ ConvertUnit");
+        Console.debug("☑️ ConvertUnit");
         const friendlyUnits = AirQuality.Config.Units.Friendly;
-        Console.info(`Convert ${amount} from ${friendlyUnits[from]} with ${fromStpConversionFactor} to ${friendlyUnits[to]} with ${toStpConversionFactor}`);
+        Console.debug("Convert", amount, "from", friendlyUnits[from], "with", fromStpConversionFactor, "to", friendlyUnits[to], "with", toStpConversionFactor);
         if (amount < 0) {
             Console.error("ConvertUnit", `Amount ${amount} < 0`);
             return -1;

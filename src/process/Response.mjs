@@ -15,15 +15,15 @@ export async function Response($request, $response, context = {}) {
     const { preFetched = {}, enviroments: preEnviroments, parameters: preParameters, Settings: preSettings, Caches: preCaches, Configs: preConfigs } = context;
     // 解构URL
     const url = new URL($request.url);
-    Console.info(`url: ${url.toJSON()}`);
+    Console.debug("url:", url.toJSON());
     // 获取连接参数
     const PATHs = url.pathname.split("/").filter(Boolean);
-    Console.info(`PATHs: ${PATHs}`);
+    Console.debug("PATHs:", PATHs);
     // 解析格式
     const FORMAT = ($response.headers?.["Content-Type"] ?? $response.headers?.["content-type"])?.split(";")?.[0];
-    Console.info(`FORMAT: ${FORMAT}`);
+    Console.debug("FORMAT:", FORMAT);
     // 打印 Apple 原始响应日志
-    Console.log(`[Apple Response] ${url.pathname}`, `status: ${$response.status}`, `content-type: ${FORMAT}`);
+    Console.debug("[Apple Response]", url.pathname, `status: ${$response.status}`, `content-type: ${FORMAT}`);
     if (url.pathname.startsWith("/api/v1/airQualityScale/")) {
         try {
             const preview = typeof $response.body === "string" ? $response.body : $response.bodyBytes ? new TextDecoder().decode(new Uint8Array($response.bodyBytes)) : "(binary)";

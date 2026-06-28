@@ -16,7 +16,7 @@ export default class MatchEnum {
     constructor(proto) {
         this.Name = "MatchEnum";
         this.Version = "0.0.3";
-        Console.log(`🟧 ${this.Name} v${this.Version}`);
+        Console.debug(`🟧 ${this.Name} v${this.Version}`);
         this.request = $request;
         this.json = {};
         this.proto = proto;

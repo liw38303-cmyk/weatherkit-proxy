@@ -7,7 +7,7 @@ export default class ColorfulClouds {
     constructor(parameters, token) {
         this.Name = "ColorfulClouds";
         this.Version = "4.1.0";
-        Console.log(`🟧 ${this.Name} v${this.Version}`);
+        Console.debug(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://api.caiyunapp.com/v2.6/${token}/${parameters.longitude},${parameters.latitude}`;
         this.headers = { Referer: "https://caiyunapp.com/" };
         this.version = parameters.version;

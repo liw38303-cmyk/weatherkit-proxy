@@ -8,7 +8,7 @@ export default class QWeather {
     constructor(parameters, token, host = "devapi.qweather.com") {
         this.Name = "QWeather";
         this.Version = "5.1.0";
-        Console.log(`🟧 ${this.Name} v${this.Version}`);
+        Console.debug(`🟧 ${this.Name} v${this.Version}`);
         this.endpoint = `https://${host}`;
         this.headers = { "X-QW-Api-Key": token };
         this.version = parameters.version;
