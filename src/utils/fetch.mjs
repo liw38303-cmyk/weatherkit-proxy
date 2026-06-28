@@ -1,3 +1,5 @@
+import { requestContext } from "./context.mjs";
+
 export async function fetch(resource, options = {}) {
     if (typeof resource === "string") {
         resource = { url: resource, ...options };
@@ -94,11 +96,6 @@ export async function fetch(resource, options = {}) {
 
         let responseBody = "";
         let responseBodyBytes = null;
-        let responseForCache = null;
-
-        if (cache && cacheKey && response.ok) {
-            responseForCache = response.clone();
-        }
 
         if (isBinary) {
             responseBodyBytes = await response.arrayBuffer();
@@ -116,9 +113,10 @@ export async function fetch(resource, options = {}) {
             headers: { ...responseHeaders, "x-ir-cache": "MISS" },
         };
 
-        if (cache && cacheKey && responseForCache) {
+        if (cache && cacheKey && response.ok) {
             try {
-                const cfResponse = new globalThis.Response(responseForCache.body, {
+                const cacheBody = isBinary ? responseBodyBytes : responseBody;
+                const cfResponse = new globalThis.Response(cacheBody, {
                     status: response.status,
                     statusText: response.statusText,
                     headers: {
@@ -127,8 +125,9 @@ export async function fetch(resource, options = {}) {
                     },
                 });
                 const cachePromise = cache.put(cacheKey, cfResponse).catch(putErr => console.error("Cache put error:", putErr));
-                if (globalThis.ctx && typeof globalThis.ctx.waitUntil === "function") {
-                    globalThis.ctx.waitUntil(cachePromise);
+                const ctx = requestContext.getStore() || globalThis.ctx;
+                if (ctx && typeof ctx.waitUntil === "function") {
+                    ctx.waitUntil(cachePromise);
                 }
             } catch (putErr) {
                 console.error("Cache put error:", putErr);

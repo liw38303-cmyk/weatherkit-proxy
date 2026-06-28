@@ -1171,90 +1171,243 @@ export function renderIndex(host, protocol) {
         const tabCustomConfigBtn = document.getElementById("tabCustomConfigBtn");
         const saveConfigBtn = document.getElementById("saveConfigBtn");
 
-        // 统一提示气泡
-        function showToast(msg) {
-            const toast = document.getElementById("toast");
-            document.getElementById("toastMsg").innerText = msg;
-            toast.classList.add("show");
-            setTimeout(() => {
-                toast.classList.remove("show");
-            }, 2000);
+        // 各预设的数据状态隔离，防止互相干扰
+        let currentPreset = "Caiyun";
+        const presetData = {
+            Caiyun: {
+                caiyunToken: ""
+            },
+            QWeather: {
+                qweatherToken: "",
+                qweatherHost: ""
+            },
+            Advanced: {
+                caiyunToken: "",
+                qweatherToken: "",
+                qweatherHost: "",
+                weatherProvider: "ColorfulClouds",
+                nextHourProvider: "ColorfulClouds",
+                indexProvider: "ColorfulCloudsCN",
+                yesterdayProvider: "ColorfulCloudsCN",
+                pollutantsProvider: "ColorfulClouds",
+                calculateAlgorithm: "WAQI_InstantCast_CN",
+                yesterdayPollutantsProvider: "ColorfulCloudsCN",
+                weatherReplace: "",
+                indexReplace: "HJ6332012",
+                unitsReplace: "None",
+                pollutantsUnitsMode: "Scale",
+                forceCNPrimaryPollutants: false,
+                allowOverRange: false,
+                replaceWhenCurrentChange: false
+            }
+        };
+
+        // 从 DOM 同步到当前预设的数据对象
+        function syncDOMToPresetData() {
+            if (currentPreset === "Caiyun") {
+                presetData.Caiyun.caiyunToken = caiyunToken.value.trim();
+            } else if (currentPreset === "QWeather") {
+                presetData.QWeather.qweatherToken = qweatherToken.value.trim();
+                presetData.QWeather.qweatherHost = qweatherHost.value.trim();
+            } else if (currentPreset === "Advanced") {
+                presetData.Advanced.caiyunToken = caiyunToken.value.trim();
+                presetData.Advanced.qweatherToken = qweatherToken.value.trim();
+                presetData.Advanced.qweatherHost = qweatherHost.value.trim();
+                presetData.Advanced.weatherProvider = weatherProvider.value;
+                presetData.Advanced.nextHourProvider = nextHourProvider.value;
+                presetData.Advanced.indexProvider = indexProvider.value;
+                presetData.Advanced.yesterdayProvider = yesterdayProvider.value;
+                presetData.Advanced.pollutantsProvider = pollutantsProvider.value;
+                presetData.Advanced.calculateAlgorithm = calculateAlgorithm.value;
+                presetData.Advanced.yesterdayPollutantsProvider = yesterdayPollutantsProvider.value;
+                presetData.Advanced.weatherReplace = weatherReplace.value.trim();
+                presetData.Advanced.indexReplace = indexReplace.value;
+                presetData.Advanced.unitsReplace = unitsReplace.value;
+                presetData.Advanced.pollutantsUnitsMode = pollutantsUnitsMode.value;
+                presetData.Advanced.forceCNPrimaryPollutants = forceCNPrimaryPollutants.checked;
+                presetData.Advanced.allowOverRange = allowOverRange.checked;
+                presetData.Advanced.replaceWhenCurrentChange = replaceWhenCurrentChange.checked;
+            }
+        }
+
+        // 从当前预设的数据对象同步回 DOM
+        function syncPresetDataToDOM() {
+            presetCaiyunBtn.classList.remove("active");
+            presetQWeatherBtn.classList.remove("active");
+            presetAdvancedBtn.classList.remove("active");
+
+            if (currentPreset === "Caiyun") {
+                presetCaiyunBtn.classList.add("active");
+                caiyunConfigGroup.style.display = "block";
+                qweatherConfigGroup.style.display = "none";
+                advancedConfigGroup.style.display = "none";
+
+                caiyunToken.value = presetData.Caiyun.caiyunToken;
+            } else if (currentPreset === "QWeather") {
+                presetQWeatherBtn.classList.add("active");
+                caiyunConfigGroup.style.display = "none";
+                qweatherConfigGroup.style.display = "block";
+                advancedConfigGroup.style.display = "none";
+
+                qweatherToken.value = presetData.QWeather.qweatherToken;
+                qweatherHost.value = presetData.QWeather.qweatherHost;
+            } else if (currentPreset === "Advanced") {
+                presetAdvancedBtn.classList.add("active");
+                caiyunConfigGroup.style.display = "block";
+                qweatherConfigGroup.style.display = "block";
+                advancedConfigGroup.style.display = "block";
+
+                caiyunToken.value = presetData.Advanced.caiyunToken;
+                qweatherToken.value = presetData.Advanced.qweatherToken;
+                qweatherHost.value = presetData.Advanced.qweatherHost;
+                weatherProvider.value = presetData.Advanced.weatherProvider;
+                nextHourProvider.value = presetData.Advanced.nextHourProvider;
+                indexProvider.value = presetData.Advanced.indexProvider;
+                yesterdayProvider.value = presetData.Advanced.yesterdayProvider;
+                pollutantsProvider.value = presetData.Advanced.pollutantsProvider;
+                calculateAlgorithm.value = presetData.Advanced.calculateAlgorithm;
+                yesterdayPollutantsProvider.value = presetData.Advanced.yesterdayPollutantsProvider;
+                weatherReplace.value = presetData.Advanced.weatherReplace;
+                indexReplace.value = presetData.Advanced.indexReplace;
+                unitsReplace.value = presetData.Advanced.unitsReplace;
+                pollutantsUnitsMode.value = presetData.Advanced.pollutantsUnitsMode;
+                forceCNPrimaryPollutants.checked = presetData.Advanced.forceCNPrimaryPollutants;
+                allowOverRange.checked = presetData.Advanced.allowOverRange;
+                replaceWhenCurrentChange.checked = presetData.Advanced.replaceWhenCurrentChange;
+            }
         }
 
         // 计算当前表单参数 of Base64 编码
         function getBase64Config() {
-            const config = {
-                Weather: { 
-                    Provider: weatherProvider.value,
-                    Replace: weatherReplace.value.trim() ? weatherReplace.value.trim().split(",").map(s => s.trim()).filter(Boolean) : undefined
-                },
-                NextHour: { Provider: nextHourProvider.value },
-                AirQuality: {
-                    Current: {
-                        Pollutants: { 
-                            Provider: pollutantsProvider.value,
-                            Units: {
-                                Replace: unitsReplace.value && unitsReplace.value !== "None" ? [unitsReplace.value] : [],
-                                Mode: pollutantsUnitsMode.value
+            let config = {};
+            if (currentPreset === "Caiyun") {
+                config = {
+                    Weather: { Provider: "ColorfulClouds" },
+                    NextHour: { Provider: "ColorfulClouds" },
+                    AirQuality: {
+                        Current: {
+                            Pollutants: { Provider: "ColorfulClouds" },
+                            Index: { Provider: "ColorfulCloudsCN" }
+                        },
+                        Comparison: {
+                            Yesterday: { IndexProvider: "ColorfulCloudsCN" }
+                        }
+                    },
+                    API: {
+                        ColorfulClouds: { Token: presetData.Caiyun.caiyunToken || null }
+                    }
+                };
+            } else if (currentPreset === "QWeather") {
+                config = {
+                    Weather: { Provider: "QWeather" },
+                    NextHour: { Provider: "QWeather" },
+                    AirQuality: {
+                        Current: {
+                            Pollutants: { Provider: "QWeather" },
+                            Index: { Provider: "QWeather" }
+                        },
+                        Comparison: {
+                            Yesterday: { IndexProvider: "QWeather" }
+                        }
+                    },
+                    API: {
+                        QWeather: { 
+                            Token: presetData.QWeather.qweatherToken || null,
+                            Host: presetData.QWeather.qweatherHost || null
+                        }
+                    }
+                };
+            } else {
+                config = {
+                    Weather: { 
+                        Provider: presetData.Advanced.weatherProvider,
+                        Replace: presetData.Advanced.weatherReplace ? presetData.Advanced.weatherReplace.split(",").map(s => s.trim()).filter(Boolean) : undefined
+                    },
+                    NextHour: { Provider: presetData.Advanced.nextHourProvider },
+                    AirQuality: {
+                        Current: {
+                            Pollutants: { 
+                                Provider: presetData.Advanced.pollutantsProvider,
+                                Units: {
+                                    Replace: presetData.Advanced.unitsReplace && presetData.Advanced.unitsReplace !== "None" ? [presetData.Advanced.unitsReplace] : [],
+                                    Mode: presetData.Advanced.pollutantsUnitsMode
+                                }
+                            },
+                            Index: { 
+                                Provider: presetData.Advanced.indexProvider,
+                                ForceCNPrimaryPollutants: presetData.Advanced.forceCNPrimaryPollutants,
+                                Replace: presetData.Advanced.indexReplace ? [presetData.Advanced.indexReplace] : []
                             }
                         },
-                        Index: { 
-                            Provider: indexProvider.value,
-                            ForceCNPrimaryPollutants: forceCNPrimaryPollutants.checked,
-                            Replace: indexReplace.value ? [indexReplace.value] : []
+                        Comparison: {
+                            ReplaceWhenCurrentChange: presetData.Advanced.replaceWhenCurrentChange,
+                            Yesterday: {
+                                PollutantsProvider: presetData.Advanced.yesterdayPollutantsProvider,
+                                IndexProvider: presetData.Advanced.yesterdayProvider
+                            }
+                        },
+                        Calculate: {
+                            Algorithm: presetData.Advanced.calculateAlgorithm,
+                            AllowOverRange: presetData.Advanced.allowOverRange
                         }
                     },
-                    Comparison: {
-                        ReplaceWhenCurrentChange: replaceWhenCurrentChange.checked,
-                        Yesterday: {
-                            PollutantsProvider: yesterdayPollutantsProvider.value,
-                            IndexProvider: yesterdayProvider.value
+                    API: {
+                        ColorfulClouds: { Token: presetData.Advanced.caiyunToken || null },
+                        QWeather: { 
+                            Token: presetData.Advanced.qweatherToken || null,
+                            Host: presetData.Advanced.qweatherHost || null
                         }
-                    },
-                    Calculate: {
-                        Algorithm: calculateAlgorithm.value,
-                        AllowOverRange: allowOverRange.checked
                     }
-                },
-                API: {
-                    ColorfulClouds: { Token: caiyunToken.value.trim() || null },
-                    QWeather: { 
-                        Token: qweatherToken.value.trim() || null,
-                        Host: qweatherHost.value.trim() || null
-                    }
-                }
-            };
-            
-            // 是否有输入任何自定义数据？
-            const hasCustomToken = config.API.ColorfulClouds.Token || config.API.QWeather.Token;
-            
-            const isDefaultIndexReplace = indexReplace.value === "HJ6332012";
-            const isDefaultUnitsReplace = !unitsReplace.value || unitsReplace.value === "None";
-
-            const hasCustomProvider = config.Weather.Provider !== "ColorfulClouds" || 
-                                     config.NextHour.Provider !== "ColorfulClouds" ||
-                                     config.AirQuality.Current.Pollutants.Provider !== "ColorfulClouds" ||
-                                     config.AirQuality.Current.Index.Provider !== "ColorfulCloudsCN" ||
-                                     config.AirQuality.Comparison.Yesterday.IndexProvider !== "ColorfulCloudsCN" ||
-                                     !!config.API.QWeather.Host ||
-                                     config.AirQuality.Current.Index.ForceCNPrimaryPollutants === true ||
-                                     config.AirQuality.Comparison.ReplaceWhenCurrentChange === true ||
-                                     config.AirQuality.Calculate.AllowOverRange === true ||
-                                     config.AirQuality.Calculate.Algorithm !== "WAQI_InstantCast_CN" ||
-                                     (weatherReplace.value.trim() !== "" && weatherReplace.value.trim() !== "CN") ||
-                                     !isDefaultIndexReplace ||
-                                     !isDefaultUnitsReplace ||
-                                     pollutantsUnitsMode.value !== "Scale" ||
-                                     yesterdayPollutantsProvider.value !== "ColorfulCloudsCN";
-            
-            // 保存/更新本地浏览器存储 (LocalStorage)
-            if (hasCustomToken || hasCustomProvider) {
-                localStorage.setItem("weatherkit_config", JSON.stringify(config));
-            } else {
-                localStorage.removeItem("weatherkit_config");
+                };
             }
             
-            if (!hasCustomToken && !hasCustomProvider) {
+            // 是否有输入任何自定义数据？
+            let hasCustomData = false;
+            if (currentPreset === "Caiyun") {
+                hasCustomData = !!presetData.Caiyun.caiyunToken;
+            } else if (currentPreset === "QWeather") {
+                hasCustomData = !!presetData.QWeather.qweatherToken || !!presetData.QWeather.qweatherHost;
+            } else {
+                const isDefaultIndexReplace = presetData.Advanced.indexReplace === "HJ6332012";
+                const isDefaultUnitsReplace = !presetData.Advanced.unitsReplace || presetData.Advanced.unitsReplace === "None";
+                hasCustomData = presetData.Advanced.caiyunToken || 
+                                presetData.Advanced.qweatherToken || 
+                                presetData.Advanced.weatherProvider !== "ColorfulClouds" || 
+                                presetData.Advanced.nextHourProvider !== "ColorfulClouds" ||
+                                presetData.Advanced.pollutantsProvider !== "ColorfulClouds" ||
+                                presetData.Advanced.indexProvider !== "ColorfulCloudsCN" ||
+                                presetData.Advanced.yesterdayProvider !== "ColorfulCloudsCN" ||
+                                !!presetData.Advanced.qweatherHost ||
+                                presetData.Advanced.forceCNPrimaryPollutants === true ||
+                                presetData.Advanced.replaceWhenCurrentChange === true ||
+                                presetData.Advanced.allowOverRange === true ||
+                                presetData.Advanced.calculateAlgorithm !== "WAQI_InstantCast_CN" ||
+                                (presetData.Advanced.weatherReplace !== "" && presetData.Advanced.weatherReplace !== "CN") ||
+                                !isDefaultIndexReplace ||
+                                !isDefaultUnitsReplace ||
+                                presetData.Advanced.pollutantsUnitsMode !== "Scale" ||
+                                presetData.Advanced.yesterdayPollutantsProvider !== "ColorfulCloudsCN";
+            }
+            
+            // 保存/更新本地浏览器存储 (LocalStorage)
+            const storageState = {
+                currentPreset,
+                presetData
+            };
+
+            try {
+                if (hasCustomData) {
+                    localStorage.setItem("weatherkit_config_state", JSON.stringify(storageState));
+                    localStorage.setItem("weatherkit_config", JSON.stringify(config));
+                } else {
+                    localStorage.removeItem("weatherkit_config_state");
+                    localStorage.removeItem("weatherkit_config");
+                }
+            } catch (e) {
+                console.warn("LocalStorage access failed:", e);
+            }
+            
+            if (!hasCustomData) {
                 return ""; // 无任何自定义参数，返回空
             }
             
@@ -1282,60 +1435,52 @@ export function renderIndex(host, protocol) {
 
             const gridHtml = rawItems.map((item, index) => {
                 const isActive = index === selectedClientIndex ? "active" : "";
-                return \`
-                <div class="client-item \${isActive}" onclick="selectClient(\${index})">
-                    <span class="client-item-icon" style="font-size: \${item.iconSize || '1.8rem'};">\${item.icon}</span>
-                    <span class="client-item-name">\${item.name}</span>
-                </div>
-                \`;
+                return '<div class="client-item ' + isActive + '" onclick="selectClient(' + index + ')">' +
+                    '<span class="client-item-icon" style="font-size: ' + (item.iconSize || '1.8rem') + ';">' + item.icon + '</span>' +
+                    '<span class="client-item-name">' + item.name + '</span>' +
+                '</div>';
             }).join("");
 
             const item = rawItems[selectedClientIndex];
-            const downloadUrl = \`\${baseUrl}/conf/\${item.filename}\${configQuery}\`;
+            const downloadUrl = baseUrl + '/conf/' + item.filename + configQuery;
             const importUrl = item.scheme ? item.scheme + encodeURIComponent(downloadUrl) : "";
-            const importBtn = importUrl 
-                ? \`<a href="\${importUrl}" class="btn btn-primary">一键导入</a>\` 
-                : \`<button class="btn btn-disabled" disabled>手动导入</button>\`;
+                        const importBtn = importUrl 
+                ? '<a href="' + importUrl + '" class="btn btn-primary">一键导入</a>' 
+                : '<button class="btn btn-disabled" disabled>手动导入</button>';
 
-            const detailHtml = \`
-                <div class="card">
-                    <div class="card-header" style="margin-bottom: 0.5rem;">
-                        <div class="card-title-group">
-                            <h3 class="card-title">\${item.name}</h3>
-                            <span class="card-filename">\${item.filename}</span>
-                        </div>
-                    </div>
-                    <p class="card-desc">\${item.desc}</p>
-                    <div class="card-actions">
-                        \${importBtn}
-                        <button onclick="copyLink('\${downloadUrl}', this)" class="btn btn-secondary">
-                            <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            <span>复制链接</span>
-                        </button>
-                        <a href="\${downloadUrl}" class="btn btn-outline" download="\${item.filename}">下载配置</a>
-                    </div>
-                </div>
-            \`;
+            const detailHtml = '<div class="card">' +
+                '<div class="card-header" style="margin-bottom: 0.5rem;">' +
+                    '<div class="card-title-group">' +
+                        '<h3 class="card-title">' + item.name + '</h3>' +
+                        '<span class="card-filename">' + item.filename + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<p class="card-desc">' + item.desc + '</p>' +
+                '<div class="card-actions">' +
+                    importBtn +
+                    '<button data-url="' + downloadUrl + '" onclick="copyLink(this)" class="btn btn-secondary">' +
+                        '<svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
+                        '<span>复制链接</span>' +
+                    '</button>' +
+                    '<a href="' + downloadUrl + '" class="btn btn-outline" download="' + item.filename + '">下载配置</a>' +
+                '</div>' +
+            '</div>';
 
-            cardsContainer.innerHTML = \`
-                <div class="client-grid">
-                    \${gridHtml}
-                </div>
-                <div class="client-detail-pane">
-                    \${detailHtml}
-                </div>
-            \`;
+            cardsContainer.innerHTML = '<div class="client-grid">' +
+                gridHtml +
+            '</div>' +
+            '<div class="client-detail-pane">' +
+                detailHtml +
+            '</div>';
         }
 
         // 复制下载链接
-        function copyLink(url, button) {
+        function copyLink(button) {
+            const url = button.getAttribute('data-url');
             navigator.clipboard.writeText(url).then(function() {
                 const originalContent = button.innerHTML;
                 button.classList.add('btn-success');
-                button.innerHTML = \`
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" class="icon-copy"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>已复制</span>
-                \`;
+                button.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" class="icon-copy"><polyline points="20 6 9 17 4 12"></polyline></svg><span>已复制</span>';
                 button.disabled = true;
                 
                 setTimeout(function() {
@@ -1386,51 +1531,14 @@ export function renderIndex(host, protocol) {
         tabCustomConfigBtn.addEventListener("click", () => switchTab("custom"));
 
         function switchPreset(preset) {
-            presetCaiyunBtn.classList.remove("active");
-            presetQWeatherBtn.classList.remove("active");
-            presetAdvancedBtn.classList.remove("active");
-            
-            if (preset === "Caiyun" || preset === "QWeather") {
-                weatherReplace.value = "";
-                indexReplace.value = "HJ6332012";
-                unitsReplace.value = "None";
-                pollutantsUnitsMode.value = "Scale";
-                forceCNPrimaryPollutants.checked = false;
-                replaceWhenCurrentChange.checked = false;
-                allowOverRange.checked = false;
-                calculateAlgorithm.value = "WAQI_InstantCast_CN";
-            }
-            
-            if (preset === "Caiyun") {
-                presetCaiyunBtn.classList.add("active");
-                caiyunConfigGroup.style.display = "block";
-                qweatherConfigGroup.style.display = "none";
-                advancedConfigGroup.style.display = "none";
-                
-                weatherProvider.value = "ColorfulClouds";
-                nextHourProvider.value = "ColorfulClouds";
-                indexProvider.value = "ColorfulCloudsCN";
-                yesterdayProvider.value = "ColorfulCloudsCN";
-                pollutantsProvider.value = "ColorfulClouds";
-                yesterdayPollutantsProvider.value = "ColorfulCloudsCN";
-            } else if (preset === "QWeather") {
-                presetQWeatherBtn.classList.add("active");
-                caiyunConfigGroup.style.display = "none";
-                qweatherConfigGroup.style.display = "block";
-                advancedConfigGroup.style.display = "none";
-                
-                weatherProvider.value = "QWeather";
-                nextHourProvider.value = "QWeather";
-                indexProvider.value = "QWeather";
-                yesterdayProvider.value = "QWeather";
-                pollutantsProvider.value = "QWeather";
-                yesterdayPollutantsProvider.value = "QWeather";
-            } else if (preset === "Advanced") {
-                presetAdvancedBtn.classList.add("active");
-                caiyunConfigGroup.style.display = "block";
-                qweatherConfigGroup.style.display = "block";
-                advancedConfigGroup.style.display = "block";
-            }
+            if (currentPreset === preset) return;
+            // 切换前，把当前表单值保存到当前的 presetData 缓存中
+            syncDOMToPresetData();
+            // 切换激活状态
+            currentPreset = preset;
+            // 将目标 preset 缓存的数据同步到 DOM 中，并显示隐藏对应选项组
+            syncPresetDataToDOM();
+            // 刷新配置卡片
             renderCards();
         }
 
@@ -1440,14 +1548,21 @@ export function renderIndex(host, protocol) {
 
         // 保存并应用配置
         saveConfigBtn.addEventListener("click", () => {
-            renderCards(); // 重新计算并保存配置
-            showToast("参数已更新并应用！");
-            setTimeout(() => {
-                switchTab("quick");
-            }, 600);
+            try {
+                syncDOMToPresetData();
+                renderCards(); // 重新计算并保存配置
+                showToast("参数已更新并应用！");
+            } catch (e) {
+                console.error("Save config error:", e);
+                showToast("配置保存失败：" + e.message);
+            } finally {
+                setTimeout(() => {
+                    switchTab("quick");
+                }, 600);
+            }
         });
 
-        // 监听所有输入框和下拉框的变化
+        // 监听所有输入框和下拉框的变化，并及时同步到 presetData
         const inputs = [
             caiyunToken, qweatherToken, qweatherHost, weatherProvider, nextHourProvider, 
             pollutantsProvider, indexProvider, yesterdayProvider, calculateAlgorithm, 
@@ -1457,74 +1572,85 @@ export function renderIndex(host, protocol) {
         ];
         inputs.forEach(input => {
             if (input) {
-                input.addEventListener("change", renderCards);
-                input.addEventListener("input", renderCards);
+                const handler = () => {
+                    syncDOMToPresetData();
+                    renderCards();
+                };
+                input.addEventListener("change", handler);
+                input.addEventListener("input", handler);
             }
         });
 
         // 将当前表单的值回填
         function applyConfig(decoded) {
-            caiyunToken.value = decoded.API?.ColorfulClouds?.Token || "";
-            qweatherToken.value = decoded.API?.QWeather?.Token || "";
-            qweatherHost.value = decoded.API?.QWeather?.Host || "";
-            
-            weatherProvider.value = decoded.Weather?.Provider || "ColorfulClouds";
-            nextHourProvider.value = decoded.NextHour?.Provider || "ColorfulClouds";
-            pollutantsProvider.value = decoded.AirQuality?.Current?.Pollutants?.Provider || "ColorfulClouds";
-            indexProvider.value = decoded.AirQuality?.Current?.Index?.Provider || "ColorfulCloudsCN";
-            yesterdayProvider.value = decoded.AirQuality?.Comparison?.Yesterday?.IndexProvider || "ColorfulCloudsCN";
+            const cToken = decoded.API?.ColorfulClouds?.Token || "";
+            const qToken = decoded.API?.QWeather?.Token || "";
+            const qHost = decoded.API?.QWeather?.Host || "";
 
-            // 还原高级配置
-            weatherReplace.value = decoded.Weather?.Replace ? decoded.Weather.Replace.join(",") : "";
-            yesterdayPollutantsProvider.value = decoded.AirQuality?.Comparison?.Yesterday?.PollutantsProvider || "ColorfulCloudsCN";
-            pollutantsUnitsMode.value = decoded.AirQuality?.Current?.Pollutants?.Units?.Mode || "Scale";
+            // 初始化所有预设下的 API 令牌缓存，保持数据基本一致性，避免切换后变空
+            presetData.Caiyun.caiyunToken = cToken;
+            presetData.QWeather.qweatherToken = qToken;
+            presetData.QWeather.qweatherHost = qHost;
 
-            forceCNPrimaryPollutants.checked = decoded.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants === true;
-            replaceWhenCurrentChange.checked = decoded.AirQuality?.Comparison?.ReplaceWhenCurrentChange === true;
-            allowOverRange.checked = decoded.AirQuality?.Calculate?.AllowOverRange === true;
-            calculateAlgorithm.value = decoded.AirQuality?.Calculate?.Algorithm || "WAQI_InstantCast_CN";
+            // 写入 Advanced 配置缓存
+            presetData.Advanced.caiyunToken = cToken;
+            presetData.Advanced.qweatherToken = qToken;
+            presetData.Advanced.qweatherHost = qHost;
+            presetData.Advanced.weatherProvider = decoded.Weather?.Provider || "ColorfulClouds";
+            presetData.Advanced.nextHourProvider = decoded.NextHour?.Provider || "ColorfulClouds";
+            presetData.Advanced.pollutantsProvider = decoded.AirQuality?.Current?.Pollutants?.Provider || "ColorfulClouds";
+            presetData.Advanced.indexProvider = decoded.AirQuality?.Current?.Index?.Provider || "ColorfulCloudsCN";
+            presetData.Advanced.yesterdayProvider = decoded.AirQuality?.Comparison?.Yesterday?.IndexProvider || "ColorfulCloudsCN";
 
-            // 还原单选下拉框
+            presetData.Advanced.weatherReplace = decoded.Weather?.Replace ? decoded.Weather.Replace.join(",") : "";
+            presetData.Advanced.yesterdayPollutantsProvider = decoded.AirQuality?.Comparison?.Yesterday?.PollutantsProvider || "ColorfulCloudsCN";
+            presetData.Advanced.pollutantsUnitsMode = decoded.AirQuality?.Current?.Pollutants?.Units?.Mode || "Scale";
+
+            presetData.Advanced.forceCNPrimaryPollutants = decoded.AirQuality?.Current?.Index?.ForceCNPrimaryPollutants === true;
+            presetData.Advanced.replaceWhenCurrentChange = decoded.AirQuality?.Comparison?.ReplaceWhenCurrentChange === true;
+            presetData.Advanced.allowOverRange = decoded.AirQuality?.Calculate?.AllowOverRange === true;
+            presetData.Advanced.calculateAlgorithm = decoded.AirQuality?.Calculate?.Algorithm || "WAQI_InstantCast_CN";
+
             const indexReplaceArr = decoded.AirQuality?.Current?.Index?.Replace ?? ["HJ6332012"];
-            indexReplace.value = indexReplaceArr[0] || "HJ6332012";
+            presetData.Advanced.indexReplace = indexReplaceArr[0] || "HJ6332012";
 
             const unitsReplaceArr = decoded.AirQuality?.Current?.Pollutants?.Units?.Replace ?? [];
-            unitsReplace.value = unitsReplaceArr[0] || "None";
+            presetData.Advanced.unitsReplace = unitsReplaceArr[0] || "None";
 
-            const isQWeather = weatherProvider.value === "QWeather" && 
-                               nextHourProvider.value === "QWeather" && 
-                               indexProvider.value === "QWeather" && 
-                               yesterdayProvider.value === "QWeather" && 
-                               pollutantsProvider.value === "QWeather" && 
-                               yesterdayPollutantsProvider.value === "QWeather";
+            // 判断应该属于哪个 Preset
+            const isQWeather = decoded.Weather?.Provider === "QWeather" && 
+                               decoded.NextHour?.Provider === "QWeather" && 
+                               decoded.AirQuality?.Current?.Index?.Provider === "QWeather" && 
+                               decoded.AirQuality?.Comparison?.Yesterday?.IndexProvider === "QWeather" && 
+                               decoded.AirQuality?.Current?.Pollutants?.Provider === "QWeather" && 
+                               decoded.AirQuality?.Comparison?.Yesterday?.PollutantsProvider === "QWeather";
             
-            const isCaiyun = weatherProvider.value === "ColorfulClouds" && 
-                             nextHourProvider.value === "ColorfulClouds" && 
-                             indexProvider.value === "ColorfulCloudsCN" && 
-                             yesterdayProvider.value === "ColorfulCloudsCN" && 
-                             pollutantsProvider.value === "ColorfulClouds" && 
-                             yesterdayPollutantsProvider.value === "ColorfulCloudsCN";
+            const isCaiyun = (decoded.Weather?.Provider === "ColorfulClouds" || !decoded.Weather?.Provider) && 
+                             (decoded.NextHour?.Provider === "ColorfulClouds" || !decoded.NextHour?.Provider) && 
+                             (decoded.AirQuality?.Current?.Index?.Provider === "ColorfulCloudsCN" || !decoded.AirQuality?.Current?.Index?.Provider) && 
+                             (decoded.AirQuality?.Comparison?.Yesterday?.IndexProvider === "ColorfulCloudsCN" || !decoded.AirQuality?.Comparison?.Yesterday?.IndexProvider) && 
+                             (decoded.AirQuality?.Current?.Pollutants?.Provider === "ColorfulClouds" || !decoded.AirQuality?.Current?.Pollutants?.Provider) && 
+                             (decoded.AirQuality?.Comparison?.Yesterday?.PollutantsProvider === "ColorfulCloudsCN" || !decoded.AirQuality?.Comparison?.Yesterday?.PollutantsProvider) &&
+                             !qToken && !qHost;
             
-            presetCaiyunBtn.classList.remove("active");
-            presetQWeatherBtn.classList.remove("active");
-            presetAdvancedBtn.classList.remove("active");
+            const isDefaultAdvanced = !presetData.Advanced.weatherReplace &&
+                                      presetData.Advanced.indexReplace === "HJ6332012" &&
+                                      presetData.Advanced.unitsReplace === "None" &&
+                                      presetData.Advanced.pollutantsUnitsMode === "Scale" &&
+                                      !presetData.Advanced.forceCNPrimaryPollutants &&
+                                      !presetData.Advanced.replaceWhenCurrentChange &&
+                                      !presetData.Advanced.allowOverRange &&
+                                      presetData.Advanced.calculateAlgorithm === "WAQI_InstantCast_CN";
 
-            if (isQWeather) {
-                presetQWeatherBtn.classList.add("active");
-                caiyunConfigGroup.style.display = "none";
-                qweatherConfigGroup.style.display = "block";
-                advancedConfigGroup.style.display = "none";
-            } else if (isCaiyun) {
-                presetCaiyunBtn.classList.add("active");
-                caiyunConfigGroup.style.display = "block";
-                qweatherConfigGroup.style.display = "none";
-                advancedConfigGroup.style.display = "none";
+            if (isQWeather && isDefaultAdvanced) {
+                currentPreset = "QWeather";
+            } else if (isCaiyun && isDefaultAdvanced) {
+                currentPreset = "Caiyun";
             } else {
-                presetAdvancedBtn.classList.add("active");
-                caiyunConfigGroup.style.display = "block";
-                qweatherConfigGroup.style.display = "block";
-                advancedConfigGroup.style.display = "block";
+                currentPreset = "Advanced";
             }
+
+            syncPresetDataToDOM();
         }
 
         // 初始化回填 URL 传参
