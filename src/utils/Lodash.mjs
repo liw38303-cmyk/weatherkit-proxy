@@ -47,10 +47,8 @@ export class Lodash {
                             }
                         }
                         break;
-                    case Array.isArray(sourceValue) && sourceValue.length === 0 && targetValue !== undefined:
-                        break;
-                    case sourceValue instanceof Map && sourceValue.size === 0 && targetValue !== undefined:
-                    case sourceValue instanceof Set && sourceValue.size === 0 && targetValue !== undefined:
+                    case Array.isArray(sourceValue) && sourceValue.length > 0:
+                        object[key] = [...sourceValue];
                         break;
                     case sourceValue !== undefined:
                         object[key] = sourceValue;
