@@ -54,7 +54,7 @@ function string2array(Settings, path) {
 /**
  * 构建请求级配置（纯函数，无全局副作用）
  *
- * 替代原来的 setENV → getStorage → Storage 调用链。
+ * 替代原来的 setENV → getStorage 调用链。
  * 每次请求独立构建，不读写任何模块级或全局状态。
  *
  * @param {object} database - 默认数据库配置（database.mjs）
